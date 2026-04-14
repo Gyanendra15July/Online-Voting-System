@@ -69,8 +69,31 @@ app.all('/api/*', (req, res) => {
     res.status(404).json({ success: false, message: `404 API Not Found: Endpoint ${req.method} ${req.originalUrl} does not exist.` });
 });
 
+// Explicit Page Routes (Prevents 404 on clean URLs)
+app.get('/register', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'register.html'));
+});
+
+app.get('/dashboard', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
+});
+
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
+// Debug Route
+app.get('/test', (req, res) => {
+    res.send('Online Voting System Server is Running!');
+});
+
 // Fallback to index.html for unknown frontend routes
 app.get('*', (req, res) => {
+    const requestedFile = path.join(__dirname, 'public', req.path);
+    if (req.path.endsWith('.html') || req.path.includes('.')) {
+         // If a specific file was requested but not found by static middleware
+         return res.status(404).json({ success: false, message: 'File not found' });
+    }
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
