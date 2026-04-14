@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS users (
   role ENUM('voter', 'admin') DEFAULT 'voter',
   voter_id VARCHAR(50) UNIQUE,
   face_data MEDIUMTEXT,
+  device_id VARCHAR(255),
   is_verified BOOLEAN DEFAULT FALSE,
   is_blocked BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -18,6 +19,7 @@ CREATE TABLE IF NOT EXISTS elections (
   start_time DATETIME NOT NULL,
   end_time DATETIME NOT NULL,
   status ENUM('upcoming','active','closed') DEFAULT 'upcoming',
+  results_published BOOLEAN DEFAULT FALSE,
   created_by INT,
   FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
 );
@@ -27,6 +29,8 @@ CREATE TABLE IF NOT EXISTS candidates (
   election_id INT,
   name VARCHAR(150) NOT NULL,
   party VARCHAR(100),
+  party_name VARCHAR(100),
+  party_logo LONGTEXT,
   bio TEXT,
   photo_url VARCHAR(300),
   FOREIGN KEY (election_id) REFERENCES elections(id) ON DELETE CASCADE
@@ -38,9 +42,10 @@ CREATE TABLE IF NOT EXISTS votes (
   election_id INT,
   candidate_id INT,
   voted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  device_id VARCHAR(255),
   FOREIGN KEY (user_id) REFERENCES users(id),
-  FOREIGN KEY (election_id) REFERENCES elections(id),
-  FOREIGN KEY (candidate_id) REFERENCES candidates(id),
+  FOREIGN KEY (election_id) REFERENCES elections(id) ON DELETE CASCADE,
+  FOREIGN KEY (candidate_id) REFERENCES candidates(id) ON DELETE CASCADE,
   UNIQUE KEY unique_vote (user_id, election_id)
 );
 

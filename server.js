@@ -101,7 +101,8 @@ app.get('*', (req, res) => {
 cron.schedule('* * * * *', async () => {
     try {
         const now = new Date();
-        const [elections] = await pool.query('SELECT id, start_time, end_time, status, results_published FROM elections');
+        // Query only guaranteed columns first to avoid total crash if migration pending
+        const [elections] = await pool.query('SELECT * FROM elections');
         
         for (let election of elections) {
             const start = new Date(election.start_time);
@@ -122,24 +123,28 @@ cron.schedule('* * * * *', async () => {
                 console.log(`[Lifecycle] Election ${election.id} status: ${election.status} → ${newStatus}`);
             }
 
-            // Auto-publish results when election closes
-            if (newStatus === 'closed' && !election.results_published) {
-                // Calculate and cache winner info
-                const [candidates] = await pool.query(
-                    `SELECT c.id, c.name, (SELECT COUNT(*) FROM votes v WHERE v.candidate_id = c.id) as vote_count 
-                     FROM candidates c WHERE c.election_id = ? ORDER BY vote_count DESC`,
-                    [election.id]
-                );
-                
-                const winner = candidates.length > 0 ? candidates[0].name : 'No candidates';
-                const totalVotes = candidates.reduce((sum, c) => sum + c.vote_count, 0);
-                
-                await pool.query('UPDATE elections SET results_published = TRUE WHERE id = ?', [election.id]);
-                console.log(`[Lifecycle] Election ${election.id} results auto-published. Winner: ${winner} (${totalVotes} total votes)`);
+            // Auto-publish results when election closes (DANGER: Check if column exists in row)
+            if (newStatus === 'closed' && election.hasOwnProperty('results_published') && !election.results_published) {
+                try {
+                    // Calculate and cache winner info
+                    const [candidates] = await pool.query(
+                        `SELECT c.id, c.name, (SELECT COUNT(*) FROM votes v WHERE v.candidate_id = c.id) as vote_count 
+                         FROM candidates c WHERE c.election_id = ? ORDER BY vote_count DESC`,
+                        [election.id]
+                    );
+                    
+                    const winner = candidates.length > 0 ? candidates[0].name : 'No candidates';
+                    const totalVotes = candidates.reduce((sum, c) => sum + c.vote_count, 0);
+                    
+                    await pool.query('UPDATE elections SET results_published = TRUE WHERE id = ?', [election.id]);
+                    console.log(`[Lifecycle] Election ${election.id} results auto-published. Winner: ${winner} (${totalVotes} total votes)`);
+                } catch (publishErr) {
+                    console.error(`[Lifecycle] Failed to auto-publish results for election ${election.id}:`, publishErr.message);
+                }
             }
         }
     } catch (err) {
-        console.error('[Lifecycle] Cron error:', err);
+        console.error('[Lifecycle] Cron critical failure:', err.message);
     }
 });
 

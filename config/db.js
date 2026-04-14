@@ -42,6 +42,30 @@ const path = require('path');
             } catch(e) {
                 console.log('[Info] Seed data skipped or already present.');
             }
+        } else {
+             // Proactive Column Fixes (Repair existing schema)
+             console.log('\x1b[36m✔ Verifying database column integrity...\x1b[0m');
+             try {
+                 const [cols] = await pool.query("SHOW COLUMNS FROM elections LIKE 'results_published'");
+                 if (cols.length === 0) {
+                     await pool.query("ALTER TABLE elections ADD COLUMN results_published BOOLEAN DEFAULT FALSE");
+                     console.log('\x1b[32m✔ Repaired: Added results_published to elections table.\x1b[0m');
+                 }
+                 
+                 const [uCols] = await pool.query("SHOW COLUMNS FROM users LIKE 'device_id'");
+                 if (uCols.length === 0) {
+                     await pool.query("ALTER TABLE users ADD COLUMN device_id VARCHAR(255)");
+                     console.log('\x1b[32m✔ Repaired: Added device_id to users table.\x1b[0m');
+                 }
+                 
+                 const [vCols] = await pool.query("SHOW COLUMNS FROM votes LIKE 'device_id'");
+                 if (vCols.length === 0) {
+                     await pool.query("ALTER TABLE votes ADD COLUMN device_id VARCHAR(255)");
+                     console.log('\x1b[32m✔ Repaired: Added device_id to votes table.\x1b[0m');
+                 }
+             } catch(repairErr) {
+                 console.warn('[Warning] Maintenance: Could not auto-repair columns. Permission denied?', repairErr.message);
+             }
         }
 
         console.log('\x1b[32m✔ Internal Service: Database connection established successfully!\x1b[0m');
