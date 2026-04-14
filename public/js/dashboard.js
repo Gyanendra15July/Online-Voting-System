@@ -6,12 +6,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (greeting) greeting.textContent = `Hello, ${localStorage.getItem('name')}`;
     loadElections();
     
-    // Auto refresh results every 5 seconds when viewing detail
+    // Auto refresh results every 3 seconds when viewing detail for live feedback
     setInterval(() => {
         if (!document.getElementById('election-detail-view').classList.contains('hidden')) {
             if (currentElectionId) loadResults(currentElectionId, false);
         }
-    }, 5000);
+    }, 3000);
     
     // Auto-refresh election list every 30 seconds to catch lifecycle status changes
     setInterval(() => {
