@@ -237,8 +237,7 @@ async function uploadPartyLogo(file) {
     
     try {
         const token = localStorage.getItem('token');
-        const API_BASE = window.location.href.startsWith('file://') || window.location.port !== "5000" ? 'http://localhost:5000' : '';
-        const targetUrl = `${API_BASE}/api/upload`;
+        const targetUrl = `/api/upload`;
         
         const res = await fetch(targetUrl, {
             method: 'POST',

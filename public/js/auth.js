@@ -127,7 +127,7 @@ const showAlert = (message, type = 'error') => {
 };
 
 // API helpers
-const API_BASE_URL = window.location.href.startsWith('file://') || (window.location.port && window.location.port !== "5000") ? 'http://localhost:5000' : '';
+const API_BASE_URL = ''; // Relative path for production (Same origin)
 
 const apiCall = async (url, method = 'GET', body = null) => {
     const token = getToken();

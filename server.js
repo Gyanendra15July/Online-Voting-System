@@ -131,16 +131,9 @@ process.on('unhandledRejection', (reason, promise) => {
     console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
-app.listen(PORT, () => {
-    const url = `http://localhost:${PORT}`;
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`\n\x1b[32m✔ Server successfully started in production mode!\x1b[0m`);
+    console.log(`Server listening on \x1b[36m\x1b[4m0.0.0.0:${PORT}\x1b[0m\n`);
     
-    // Colored console output using ANSI escape codes
-    // \x1b[32m is green, \x1b[36m is cyan, \x1b[4m is underline, \x1b[0m resets color
-    console.log(`\n\x1b[32m✔ Server successfully started!\x1b[0m`);
-    console.log(`Server running at \x1b[36m\x1b[4m${url}\x1b[0m\n`);
-
-    // Auto-open browser 
-    const { exec } = require('child_process');
-    const startCmd = process.platform === 'win32' ? 'start' : process.platform === 'darwin' ? 'open' : 'xdg-open';
-    exec(`${startCmd} ${url}`);
+    // Auto-open browser logic removed for cloud deployment (Render/Heroku/etc)
 });
