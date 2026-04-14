@@ -63,6 +63,18 @@ const path = require('path');
                      await pool.query("ALTER TABLE votes ADD COLUMN device_id VARCHAR(255)");
                      console.log('\x1b[32m✔ Repaired: Added device_id to votes table.\x1b[0m');
                  }
+
+                 // NEW: Candidates table repairs
+                 const [pCols] = await pool.query("SHOW COLUMNS FROM candidates LIKE 'party_name'");
+                 if (pCols.length === 0) {
+                     await pool.query("ALTER TABLE candidates ADD COLUMN party_name VARCHAR(100)");
+                     console.log('\x1b[32m✔ Repaired: Added party_name to candidates table.\x1b[0m');
+                 }
+                 const [plCols] = await pool.query("SHOW COLUMNS FROM candidates LIKE 'party_logo'");
+                 if (plCols.length === 0) {
+                     await pool.query("ALTER TABLE candidates ADD COLUMN party_logo LONGTEXT");
+                     console.log('\x1b[32m✔ Repaired: Added party_logo to candidates table.\x1b[0m');
+                 }
              } catch(repairErr) {
                  console.warn('[Warning] Maintenance: Could not auto-repair columns. Permission denied?', repairErr.message);
              }
