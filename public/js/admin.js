@@ -188,81 +188,66 @@ const addCandidate = async (e) => {
         showAlert('Candidate added', 'success');
         document.getElementById('add-candidate-form').reset();
         document.getElementById('upload-preview').innerHTML = '';
+        document.getElementById('upload-preview-photo').innerHTML = '';
         viewAdminElection(selectedElectionId);
     } catch (err) { showAlert(err.message); }
 };
 
-// Drag & Drop Handling UI
-document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(() => {
-        const dropZone = document.getElementById('drop-zone');
-        const fileInput = document.getElementById('ac-party-logo-file');
-        if(!dropZone || !fileInput) return;
-        
-        dropZone.addEventListener('click', () => fileInput.click());
-        
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.style.background = 'rgba(99, 102, 241, 0.2)';
-        });
-        
-        dropZone.addEventListener('dragleave', (e) => {
-            e.preventDefault();
-            dropZone.style.background = 'transparent';
-        });
-        
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.style.background = 'transparent';
-            if(e.dataTransfer.files.length) {
-                fileInput.files = e.dataTransfer.files;
-                uploadPartyLogo(e.dataTransfer.files[0]);
-            }
-        });
-        
-        fileInput.addEventListener('change', (e) => {
-            if(e.target.files.length) {
-                uploadPartyLogo(e.target.files[0]);
-            }
-        });
-    }, 100);
-});
-
-async function uploadPartyLogo(file) {
+// Helper for generic image uploads (Logos & Profile Photos)
+async function uploadCandidateImage(file, targetInputId, previewId) {
     if (!file) return;
-    document.getElementById('upload-preview').innerHTML = '<span class="text-primary">Uploading...</span>';
+    const preview = document.getElementById(previewId);
+    preview.innerHTML = '<span class="text-primary" style="font-size:0.75rem;">Uploading...</span>';
     
     const formData = new FormData();
     formData.append('image', file);
     
     try {
         const token = localStorage.getItem('token');
-        const targetUrl = `/api/upload`;
-        
-        const res = await fetch(targetUrl, {
+        const res = await fetch(`/api/upload`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}` },
             body: formData
         });
-        const text = await res.text();
-        let data;
-        try {
-             data = JSON.parse(text);
-        } catch {
-             throw new Error('Server returned invalid JSON on upload.');
-        }
         
+        const data = await res.json();
         if (!res.ok) throw new Error(data.message || 'Upload failed');
         
-        document.getElementById('upload-preview').innerHTML = `<img src="${data.url}" style="height: 60px; border-radius: 4px; object-fit: contain;">`;
-        document.getElementById('ac-party-logo').value = data.url;
-        showAlert('Logo uploaded and compressed securely', 'success');
+        preview.innerHTML = `<img src="${data.url}" style="height: 60px; border-radius: 4px; object-fit: contain; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">`;
+        document.getElementById(targetInputId).value = data.url;
+        showAlert('Image processed and stored successfully', 'success');
         
     } catch (err) {
-        document.getElementById('upload-preview').innerHTML = '<span class="text-error">Upload failed</span>';
+        preview.innerHTML = '<span class="text-error" style="font-size:0.75rem;">Error</span>';
         showAlert(err.message, 'error');
     }
 }
+
+// Global Drag & Drop Initialization
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+        const dzLogo = document.getElementById('drop-zone');
+        const fiLogo = document.getElementById('ac-party-logo-file');
+        const dzPhoto = document.getElementById('drop-zone-photo');
+        const fiPhoto = document.getElementById('ac-photo-file');
+
+        const setupZone = (dz, fi, target, preview) => {
+            if (!dz || !fi) return;
+            dz.onclick = () => fi.click();
+            fi.onchange = (e) => uploadCandidateImage(e.target.files[0], target, preview);
+            dz.ondragover = (e) => { e.preventDefault(); dz.style.borderColor = '#6366f1'; };
+            dz.ondragleave = () => { dz.style.borderColor = 'rgba(255,255,255,0.1)'; };
+            dz.ondrop = (e) => {
+                e.preventDefault();
+                dz.style.borderColor = 'rgba(255,255,255,0.1)';
+                if (e.dataTransfer.files.length) uploadCandidateImage(e.dataTransfer.files[0], target, preview);
+            };
+        };
+
+        setupZone(dzLogo, fiLogo, 'ac-party-logo', 'upload-preview');
+        setupZone(dzPhoto, fiPhoto, 'ac-photo', 'upload-preview-photo');
+    }, 1000);
+});
 
 
 const deleteCandidate = async (id) => {
