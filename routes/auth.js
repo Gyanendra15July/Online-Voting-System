@@ -40,40 +40,23 @@ router.post('/register', [
         const [existing] = await pool.query('SELECT id FROM users WHERE email = ?', [email]);
         if (existing.length > 0) return sendResponse(res, 400, false, 'Email already registered');
 
-        if (role === 'voter') {
-            const [existingVoter] = await pool.query('SELECT id FROM users WHERE voter_id = ?', [voter_id]);
-            if (existingVoter.length > 0) return sendResponse(res, 400, false, 'Voter ID already registered');
-        }
-
         const hashedPassword = await bcrypt.hash(password, 10);
         
-        let insertData = [name, email, hashedPassword, role];
-        let query = 'INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)';
-
-        if (role === 'voter') {
-            insertData = [name, email, hashedPassword, role, voter_id, face_data, device_id];
-            query = 'INSERT INTO users (name, email, password, role, voter_id, face_data, device_id) VALUES (?, ?, ?, ?, ?, ?, ?)';
-        } else if (role === 'admin') {
-            insertData = [name, email, hashedPassword, role, photo_url, device_id];
-            query = 'INSERT INTO users (name, email, password, role, photo_url, device_id) VALUES (?, ?, ?, ?, ?, ?)';
-        }
-
-        const [result] = await pool.query(query, insertData);
+        // Simple registration: voter_id and face_data are NOT required here anymore.
+        // They will be handled during the voting process for better security and UX.
+        const [result] = await pool.query(
+            'INSERT INTO users (name, email, password, role, voter_id, device_id) VALUES (?, ?, ?, ?, ?, ?)',
+            [name, email, hashedPassword, role, voter_id || null, device_id || null]
+        );
 
         const userId = result.insertId;
-        // Bind JWT specifically to this device fingerprint
         const token = jwt.sign({ id: userId, role, deviceId: device_id }, process.env.JWT_SECRET, { expiresIn: '24h' });
 
-        await logAudit(userId, 'REGISTER', `User registered as ${role} carrying biometric signature`, req.ip);
+        await logAudit(userId, 'REGISTER', `User registered as ${role}`, req.ip);
 
-        return sendResponse(res, 201, true, 'Registration+Verification successful', { token, role });
+        return sendResponse(res, 201, true, 'Registration successful', { token, role });
     } catch (error) {
         console.error(error);
-        if (error.code === 'ER_DUP_ENTRY') {
-             if(error.message.includes('voter_id')) {
-                 return sendResponse(res, 400, false, 'Duplicate Voter ID: This identity has already been registered.');
-             }
-        }
         return sendResponse(res, 500, false, 'Server error');
     }
 });
