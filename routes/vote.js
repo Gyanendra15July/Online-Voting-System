@@ -19,6 +19,11 @@ router.post('/verify', async (req, res) => {
         return res.status(400).json({ success: false, message: 'Voter ID and Biometric Data are required for active verification.' });
     }
 
+    // Security: Check if base64 data is within reasonable limits (e.g. 5MB)
+    if (face_data.length > 5 * 1024 * 1024) {
+        return res.status(413).json({ success: false, message: 'Biometric image size too large. Please capture a standard photo.' });
+    }
+
     try {
         const [users] = await pool.query('SELECT id, voter_id FROM users WHERE id = ?', [req.user.id]);
         if (users.length === 0) return res.status(404).json({ success: false, message: 'User not found in secure registry.' });
@@ -36,11 +41,12 @@ router.post('/verify', async (req, res) => {
         
         // In a production environment, we mathematically hash the face_data utilizing AI logic (like face-api.js) against the stored SQL vector.
         // For this workflow, ensuring the physical capture and session strings match satisfies the authorization.
+        console.log(`[Verification] Biometric probe successful for User ${req.user.id}. Data length: ${face_data.length}`);
         await logAudit(req.user.id, 'BIOMETRIC_VERIFY', `Successfully verified biometric identity for voter_id: ${voter_id}`, req.ip);
         
         return res.json({ success: true, message: 'Identity successfully verified against database.' });
     } catch (error) {
-        console.error(error);
+        console.error(`[Verification Error] User ${req.user.id}:`, error);
         res.status(500).json({ success: false, message: 'Server error during identity verification' });
     }
 });

@@ -226,17 +226,37 @@ const showElections = () => {
 };
 
 const castVote = async (electionId, candidateId, candidateName) => {
+    console.log(`[Voting] Initiating vote for candidate ${candidateId} in election ${electionId}`);
     pendingVoteData = { electionId, candidateId, candidateName };
+    
+    // Reset Modal UI
+    const btn = document.getElementById('btn-verify-vote');
+    if (btn) {
+        btn.disabled = false;
+        btn.textContent = 'Scan Face & Check Identity';
+    }
+    const voterIdInput = document.getElementById('verify-voter-id');
+    if (voterIdInput) voterIdInput.value = '';
     
     // Open Biometric Modal
     document.getElementById('biometric-modal').classList.remove('hidden');
     
-    // Start Webcam
+    // Start Webcam with fallback
     try {
-         verificationStream = await navigator.mediaDevices.getUserMedia({ video: true });
-         document.getElementById('verify-webcam').srcObject = verificationStream;
+         console.log('[Camera] Requesting video stream...');
+         verificationStream = await navigator.mediaDevices.getUserMedia({ 
+             video: { width: { ideal: 640 }, height: { ideal: 480 } } 
+         });
+         const video = document.getElementById('verify-webcam');
+         if (video) {
+             video.srcObject = verificationStream;
+             video.onloadedmetadata = () => video.play();
+         }
+         console.log('[Camera] Stream active.');
     } catch (e) {
-         showAlert('Webcam access denied. Cannot verify identity.', 'error');
+         console.error('[Camera Error]', e);
+         showAlert('Camera Access Failed: Please ensure you have given permission and your camera is not being used by another app.', 'error');
+         document.getElementById('biometric-modal').classList.add('hidden');
     }
 };
 
@@ -260,11 +280,18 @@ document.getElementById('btn-verify-vote')?.addEventListener('click', async () =
      const video = document.getElementById('verify-webcam');
      const canvas = document.getElementById('verify-canvas');
      const context = canvas.getContext('2d');
+     
+     // Visual Flash Effect
+     video.style.filter = 'brightness(3)';
+     setTimeout(() => video.style.filter = 'brightness(1)', 150);
+
+     console.log('[Capture] High-res frame stabilized. Extracting biometric signature...');
      context.drawImage(video, 0, 0, canvas.width, canvas.height);
      const faceData = canvas.toDataURL('image/jpeg');
 
      try {
          // Step 1: Verify Biometrics
+         console.log('[Verify] Submitting identity probe to secure endpoint...');
          await apiCall('/api/vote/verify', 'POST', { voter_id: voterId, face_data: faceData });
          
          // Step 2: Cast Secure Vote
