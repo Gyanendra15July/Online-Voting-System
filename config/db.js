@@ -75,6 +75,10 @@ const path = require('path');
                      await pool.query("ALTER TABLE candidates ADD COLUMN party_logo LONGTEXT");
                      console.log('\x1b[32m✔ Repaired: Added party_logo to candidates table.\x1b[0m');
                  }
+
+                 // Fix Data Too Long issues for candidate photos
+                 console.log('\x1b[36m✔ Upgrading photo_url column capacity...\x1b[0m');
+                 await pool.query("ALTER TABLE candidates MODIFY COLUMN photo_url LONGTEXT");
              } catch(repairErr) {
                  console.warn('[Warning] Maintenance: Could not auto-repair columns. Permission denied?', repairErr.message);
              }

@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS candidates (
   party_name VARCHAR(100),
   party_logo LONGTEXT,
   bio TEXT,
-  photo_url VARCHAR(300),
+  photo_url LONGTEXT,
   FOREIGN KEY (election_id) REFERENCES elections(id) ON DELETE CASCADE
 );
 
