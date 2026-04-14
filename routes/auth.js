@@ -24,12 +24,7 @@ router.post('/register', [
     
     if (!device_id) return sendResponse(res, 400, false, 'Device fingerprint is required for secure registration');
     
-    // Role-specific validation
-    if (role === 'voter') {
-        if (!voter_id || voter_id.trim() === '') return sendResponse(res, 400, false, 'Voter ID is required for voters.');
-        if (!face_data || face_data.trim() === '') return sendResponse(res, 400, false, 'Biometric face data is required for voters.');
-    }
-
+    // Registration is now simplified. Identity verification occurs during active voting.
     if (role === 'admin') {
         if (!email.toLowerCase().endsWith('@vote.com')) {
             return sendResponse(res, 403, false, 'Unauthorized admin access: Only @vote.com domains allowed.');
