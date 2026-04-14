@@ -16,6 +16,9 @@ const uploadRoutes = require('./routes/upload');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Enable trust proxy for Render (Load Balancers)
+app.set('trust proxy', 1);
+
 // Security Middlewares
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors());
