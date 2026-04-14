@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Online Voting System</title>
+    <meta name="description" content="Admin dashboard to manage elections, users and view logs">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-brand">E-Vote Admin Panel</div>
+        <div class="nav-links">
+            <span id="admin-greeting">Hello, Admin</span>
+            <button onclick="logout()" class="btn btn-secondary">Logout</button>
+        </div>
+    </nav>
+
+    <div class="admin-layout">
+        <aside class="sidebar">
+            <nav class="sidebar-nav">
+                <a href="#elections" class="sidebar-link active" onclick="switchTab('elections')">Elections</a>
+                <a href="#users" class="sidebar-link" onclick="switchTab('users')">Users</a>
+                <a href="#audit" class="sidebar-link" onclick="switchTab('audit')">Audit Log</a>
+            </nav>
+        </aside>
+
+        <main class="admin-content">
+            <div id="alert-box" class="alert hidden"></div>
+
+            <!-- Elections Tab -->
+            <section id="tab-elections">
+                <div class="flex justify-between items-center mb-4">
+                    <h2>Manage Elections</h2>
+                    <button class="btn" onclick="openCreateElectionModal()" style="width: auto;">+ New Election</button>
+                </div>
+                <div class="glass-panel">
+                    <table id="admin-elections-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Title</th>
+                                <th>Status</th>
+                                <th>Start Time</th>
+                                <th>End Time</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Election Details Sub-Tab (Hidden initially) -->
+            <section id="tab-election-detail" class="hidden">
+                <button class="btn btn-secondary mb-4" onclick="switchTab('elections')" style="width: auto;">&larr; Back to Elections</button>
+                <div class="glass-panel mb-4">
+                    <h2 id="m-elec-title">Election Name</h2>
+                    <div class="flex justify-between items-center">
+                        <p id="m-elec-turnout" class="text-muted"></p>
+                        <button class="btn btn-secondary" onclick="openAddCandidateModal()" style="width: auto;">+ Add Candidate</button>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid bg-transparent">
+                    <div class="glass-panel">
+                        <h3>Candidates</h3>
+                        <table id="m-candidates-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Party</th>
+                                    <th>Votes</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <div class="glass-panel">
+                        <h3>Vote Distribution</h3>
+                        <div class="chart-container">
+                            <canvas id="adminResultsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Users Tab -->
+            <section id="tab-users" class="hidden">
+                <h2>Manage Users</h2>
+                <div class="glass-panel">
+                    <table id="users-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Verified</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Audit Log Tab -->
+            <section id="tab-audit" class="hidden">
+                <h2>Audit Logs</h2>
+                <div class="glass-panel">
+                    <table id="audit-table">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>User</th>
+                                <th>Action</th>
+                                <th>Details</th>
+                                <th>IP Address</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modals (Simplified, hidden forms) -->
+    <!-- Create Election Modal -->
+    <div id="modal-create-election" class="hidden glass-panel" style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); z-index:1000; width: 400px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
+        <h3>Create Election</h3>
+        <form id="create-election-form">
+            <div class="form-group">
+                <label>Title</label>
+                <input type="text" id="ce-title" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea id="ce-desc" class="form-control"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Start Time</label>
+                <input type="datetime-local" id="ce-start" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label>End Time</label>
+                <input type="datetime-local" id="ce-end" class="form-control" required>
+            </div>
+            <div class="flex" style="gap: 10px;">
+                <button type="submit" class="btn">Create</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModals()">Cancel</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Add Candidate Modal -->
+    <div id="modal-add-candidate" class="hidden glass-panel" style="position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); z-index:1000; width: 400px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);">
+        <h3>Add Candidate</h3>
+        <form id="add-candidate-form">
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" id="ac-name" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label>Party Name</label>
+                <input type="text" id="ac-party-name" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label>Party Logo Upload & URL</label>
+                <div id="drop-zone" style="border: 2px dashed #6366f1; border-radius: 8px; padding: 20px; text-align: center; margin-bottom: 10px; cursor: pointer; transition: background 0.3s;">
+                    Drag & Drop Logo Here or <span style="color:#ec4899; text-decoration:underline;">Click to Select</span>
+                    <input type="file" id="ac-party-logo-file" accept="image/png, image/jpeg, image/jpg" style="display:none;">
+                </div>
+                <div id="upload-preview" style="text-align:center; margin-bottom: 10px;"></div>
+                <input type="url" id="ac-party-logo" class="form-control" placeholder="https://... (URL generated from upload)" readonly>
+            </div>
+            <div class="form-group">
+                <label>Bio</label>
+                <textarea id="ac-bio" class="form-control"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Photo URL</label>
+                <input type="url" id="ac-photo" class="form-control" placeholder="https://...">
+            </div>
+            <div class="flex" style="gap: 10px;">
+                <button type="submit" class="btn">Add</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModals()">Cancel</button>
+            </div>
+        </form>
+    </div>
+
+    <div id="modal-overlay" class="hidden" style="position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:999;" onclick="closeModals()"></div>
+
+    <script src="js/auth.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>

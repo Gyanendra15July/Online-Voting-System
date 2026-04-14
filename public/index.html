@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Online Voting System</title>
+    <meta name="description" content="Login to the secure online voting system">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="auth-container">
+        <div class="glass-panel text-center">
+            <h1 class="navbar-brand mb-4">E-Vote</h1>
+            <h2>Welcome Back</h2>
+            <p class="text-muted mb-4">Sign in to cast your vote</p>
+            
+            <div id="alert-box" class="alert hidden"></div>
+
+            <form id="login-form" onsubmit="handleLogin(event)">
+                <div class="form-group text-left">
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" class="form-control" required placeholder="you@example.com">
+                </div>
+                <div class="form-group text-left">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" class="form-control" required placeholder="••••••••">
+                </div>
+                <button type="submit" id="btn-login" class="btn mt-2">Sign In</button>
+            </form>
+
+            <p class="mt-4 text-muted">Don't have an account? <a href="register.html">Register here</a></p>
+        </div>
+    </div>
+    <script src="js/auth.js"></script>
+    <script>
+        async function handleLogin(event) {
+            event.preventDefault();
+            const btn = document.getElementById('btn-login');
+            btn.disabled = true;
+            btn.textContent = 'Signing in...';
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                await loginUser(email, password);
+            } catch(e) {
+                 showAlert(e.message, 'error');
+            }
+            
+            btn.disabled = false;
+            btn.textContent = 'Sign In';
+        }
+    </script>
+</body>
+</html>
